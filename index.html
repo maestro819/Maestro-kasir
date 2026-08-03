@@ -1,84 +1,608 @@
-<!-- ========================================== -->
-<!-- 1. POPUP / MODAL PIN (Tampil saat buka Kelola Toko) -->
-<!-- ========================================== -->
-<div id="pinModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 999; justify-content: center; align-items: center;">
-  <div style="background: white; padding: 24px; border-radius: 16px; width: 90%; max-width: 320px; text-align: center;">
-    <div style="font-size: 32px; margin-bottom: 8px;">🔒</div>
-    <h3 style="margin: 0 0 8px 0; font-size: 18px; font-weight: bold;">Akses Kelola Toko</h3>
-    <p style="font-size: 12px; color: #666; margin-bottom: 16px;">Masukkan PIN Pemilik untuk mengelola stok</p>
-    
-    <input type="password" id="inputPinToko" placeholder="Masukkan PIN" maxlength="6" style="width: 100%; text-align: center; font-size: 20px; padding: 10px; border: 1px solid #ccc; border-radius: 8px; margin-bottom: 12px; box-sizing: border-box;">
-    
-    <p id="pinErrorMsg" style="color: red; font-size: 12px; display: none; margin-bottom: 10px;">PIN Salah! Coba lagi.</p>
-    
-    <button onclick="verifikasiPin()" style="width: 100%; background: #f97316; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer;">
-      Buka Akses
-    </button>
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Maestro Pay - Kelola Toko</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    body {
+      background-color: #f8f9fa;
+      color: #333;
+      display: flex;
+      justify-content: center;
+      min-height: 100vh;
+    }
+    .app-container {
+      width: 100%;
+      max-width: 430px;
+      background: #ffffff;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      box-shadow: 0 0 20px rgba(0,0,0,0.05);
+      padding-bottom: 70px;
+    }
+    /* Header Style */
+    .header {
+      background: linear-gradient(135deg, #ff8a00, #ff5500);
+      color: white;
+      padding: 16px 20px 24px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      border-bottom-left-radius: 4px;
+      border-bottom-right-radius: 4px;
+    }
+    .header-title h1 {
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+    .header-title p {
+      font-size: 13px;
+      font-style: italic;
+      opacity: 0.9;
+    }
+    .badge-user {
+      background: rgba(255, 255, 255, 0.25);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      backdrop-filter: blur(4px);
+    }
+    /* Main Content */
+    .content {
+      padding: 20px;
+    }
+    /* Form Add Product */
+    .form-group {
+      margin-bottom: 12px;
+    }
+    .form-input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      font-size: 15px;
+      outline: none;
+      background-color: #ffffff;
+      transition: border 0.2s;
+    }
+    .form-input:focus {
+      border-color: #ff6b00;
+    }
+    .btn-add {
+      width: 100%;
+      background-color: #ff6b00;
+      color: white;
+      border: none;
+      padding: 14px;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 6px;
+      box-shadow: 0 4px 12px rgba(255, 107, 0, 0.2);
+    }
+    .btn-add:active {
+      transform: scale(0.99);
+    }
+    /* Divider */
+    .section-divider {
+      border-bottom: 1px solid #f1f5f9;
+      margin: 20px 0;
+    }
+    /* Catalog Header */
+    .catalog-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 14px;
+    }
+    .catalog-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: #1e293b;
+    }
+    .catalog-stats {
+      font-size: 12px;
+      color: #64748b;
+      font-weight: 600;
+    }
+    /* Product Item Card */
+    .product-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .product-card {
+      border: 1px solid #f1f5f9;
+      border-radius: 14px;
+      padding: 12px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #ffffff;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+    }
+    .product-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .product-icon {
+      font-size: 22px;
+      width: 38px;
+      height: 38px;
+      background: #f8fafc;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .product-details {
+      display: flex;
+      flex-direction: column;
+    }
+    .product-name-price {
+      font-size: 14px;
+      font-weight: 700;
+      color: #1e293b;
+    }
+    .product-price {
+      color: #ea580c;
+    }
+    .product-stock {
+      font-size: 12px;
+      color: #64748b;
+      margin-top: 2px;
+    }
+    .product-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-edit-stock {
+      background-color: #eff6ff;
+      color: #2563eb;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .btn-delete {
+      background-color: transparent;
+      color: #ef4444;
+      border: none;
+      padding: 8px 10px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .btn-delete:hover {
+      background-color: #fef2f2;
+    }
+    /* Bottom Navigation */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+      max-width: 430px;
+      background: white;
+      border-top: 1px solid #f1f5f9;
+      display: flex;
+      justify-content: space-around;
+      padding: 10px 0;
+      z-index: 10;
+    }
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      color: #94a3b8;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .nav-item.active {
+      color: #ea580c;
+    }
+    .nav-icon {
+      font-size: 18px;
+    }
+    /* Modals Overlay */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(2px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 100;
+    }
+    .modal-card {
+      background: white;
+      border-radius: 20px;
+      padding: 24px;
+      width: 100%;
+      max-width: 340px;
+      text-align: center;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+      animation: popIn 0.2s ease-out;
+    }
+    @keyframes popIn {
+      from { transform: scale(0.9); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    .modal-icon {
+      font-size: 36px;
+      margin-bottom: 10px;
+    }
+    .modal-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: #0f172a;
+      margin-bottom: 6px;
+    }
+    .modal-subtitle {
+      font-size: 13px;
+      color: #64748b;
+      margin-bottom: 18px;
+      line-height: 1.4;
+    }
+    .modal-input {
+      width: 100%;
+      text-align: center;
+      font-size: 22px;
+      font-weight: 700;
+      padding: 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      margin-bottom: 14px;
+      outline: none;
+      letter-spacing: 2px;
+    }
+    .modal-input:focus {
+      border-color: #ea580c;
+    }
+    .error-msg {
+      color: #ef4444;
+      font-size: 12px;
+      margin-bottom: 12px;
+      display: none;
+    }
+    .modal-btn-primary {
+      width: 100%;
+      background: #ff6b00;
+      color: white;
+      border: none;
+      padding: 12px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+    }
+    .btn-cancel {
+      flex: 1;
+      background: #f1f5f9;
+      color: #475569;
+      border: none;
+      padding: 12px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .btn-confirm-delete {
+      flex: 1;
+      background: #ef4444;
+      color: white;
+      border: none;
+      padding: 12px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .btn-confirm-edit {
+      flex: 1;
+      background: #2563eb;
+      color: white;
+      border: none;
+      padding: 12px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <!-- HEADER -->
+    <div class="header">
+      <div class="header-title">
+        <h1>Maestro Pay</h1>
+        <p>Easy Does It</p>
+      </div>
+      <div class="badge-user">Yosop madu</div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div class="content">
+      <!-- FORM TAMBAH PRODUK BARU -->
+      <form id="formTambahProduk" onsubmit="tambahProduk(event)">
+        <div class="form-group">
+          <input type="text" id="hargaProduk" class="form-input" placeholder="Harga (misal: 10000)" required>
+        </div>
+        <div class="form-group">
+          <input type="number" id="stokProduk" class="form-input" placeholder="Jumlah Stok (misal: 10)" required>
+        </div>
+        <div class="form-group">
+          <input type="text" id="emojiProduk" class="form-input" placeholder="Emoji Icon (🍯 / ☕ / 👕)">
+        </div>
+
+        <button type="submit" class="btn-add">
+          <span>🔓</span> Tambah Produk Baru
+        </button>
+      </form>
+
+      <div class="section-divider"></div>
+
+      <!-- KATALOG & STOK HEADER -->
+      <div class="catalog-header">
+        <div class="catalog-title">Daftar Katalog & Stok Produk</div>
+        <div class="catalog-stats" id="statsText">Total Jenis: 0 | Total Stok: 0 Unit</div>
+      </div>
+
+      <!-- PRODUCT LIST -->
+      <div class="product-list" id="productList">
+        <!-- Item akan dirender oleh JS -->
+      </div>
+    </div>
+
+    <!-- BOTTOM NAVIGATION -->
+    <div class="bottom-nav">
+      <div class="nav-item">
+        <span class="nav-icon">🛒</span>
+        <span>Kasir</span>
+      </div>
+      <div class="nav-item active" onclick="cekAksesKelolaToko()">
+        <span class="nav-icon">⚙️</span>
+        <span>Kelola Toko</span>
+      </div>
+      <div class="nav-item">
+        <span class="nav-icon">📈</span>
+        <span>Laporan</span>
+      </div>
+    </div>
   </div>
-</div>
 
-<!-- ========================================== -->
-<!-- 2. SCRIPT JAVASCRIPT LOGIC -->
-<!-- ========================================== -->
-<script>
-  // PIN Toko Anda
-  const PIN_TOKO = "123456"; // <--- Ganti dengan PIN Anda
-  let isUnlocked = false; // Status apakah PIN sudah dimasukkan
+  <!-- ==================== MODAL PIN (SINGLE GATE) ==================== -->
+  <div class="modal-overlay" id="pinModal" style="display: flex;">
+    <div class="modal-card">
+      <div class="modal-icon">🔒</div>
+      <div class="modal-title">Akses Kelola Toko</div>
+      <div class="modal-subtitle">Masukkan PIN Pemilik/Admin untuk mengakses halaman ini.</div>
+      <input type="password" id="inputPin" class="modal-input" placeholder="••••••" maxlength="6" autofocus>
+      <div class="error-msg" id="pinError">PIN Salah! Silakan coba lagi.</div>
+      <button class="modal-btn-primary" onclick="verifikasiPin()">Buka Akses</button>
+    </div>
+  </div>
 
-  // Fungsi saat Tab "Kelola Toko" diklik
-  function bukaTabKelolaToko() {
-    if (!isUnlocked) {
-      // Jika belum di-PIN, tampilkan Modal PIN
-      document.getElementById('pinModal').style.display = 'flex';
-      document.getElementById('inputPinToko').value = '';
-      document.getElementById('pinErrorMsg').style.display = 'none';
-    }
-  }
+  <!-- ==================== MODAL EDIT STOK ==================== -->
+  <div class="modal-overlay" id="editModal" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-icon">✏️</div>
+      <div class="modal-title">Edit Stok</div>
+      <div class="modal-subtitle" id="editModalSubtitle">Ubah jumlah stok untuk produk</div>
+      <input type="number" id="inputEditStok" class="modal-input" placeholder="0">
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="tutupEditModal()">Batal</button>
+        <button class="btn-confirm-edit" onclick="simpanStokBaru()">Simpan</button>
+      </div>
+    </div>
+  </div>
 
-  // Verifikasi PIN
-  function verifikasiPin() {
-    const pinInput = document.getElementById('inputPinToko').value;
-    if (pinInput === PIN_TOKO) {
-      isUnlocked = true;
-      document.getElementById('pinModal').style.display = 'none';
-      alert("Akses Kelola Toko Berhasil!");
-    } else {
-      document.getElementById('pinErrorMsg').style.display = 'block';
-    }
-  }
+  <!-- ==================== MODAL KONFIRMASI HAPUS ==================== -->
+  <div class="modal-overlay" id="deleteModal" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-icon">🗑️</div>
+      <div class="modal-title">Hapus Produk?</div>
+      <div class="modal-subtitle" id="deleteModalSubtitle">Apakah Anda yakin ingin menghapus produk ini?</div>
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="tutupDeleteModal()">Batal</button>
+        <button class="btn-confirm-delete" onclick="konfirmasiHapusProduk()">Ya, Hapus</button>
+      </div>
+    </div>
+  </div>
 
-  // FITUR 1: Tambah Produk Baru (TANPA PIN)
-  function tambahProdukBaru(event) {
-    if (event) event.preventDefault();
-    
-    // Logic simpan produk baru milik Anda dimasukkan di sini...
-    alert("Produk berhasil ditambahkan!");
-  }
+  <script>
+    // --- PIN SYSTEM ---
+    const CORRECT_PIN = "123456"; // PIN rahasia toko
+    let isUnlocked = false;
 
-  // FITUR 2: Edit Stok (TANPA PIN & Langsung Berfungsi)
-  function editStokProduk(idProduk, namaProduk, stokSekarang) {
-    // Memakai Prompt bawaan browser (Simpel & Pasti Berfungsi)
-    let stokBaru = prompt(`Masukkan stok baru untuk ${namaProduk}:`, stokSekarang);
-    
-    if (stokBaru !== null && stokBaru !== "") {
-      let angkaStok = parseInt(stokBaru);
-      if (!isNaN(angkaStok)) {
-        // PERBAIKAN BUG: Update stok ke database/state Anda di sini
-        alert(`Stok ${namaProduk} berhasil diubah menjadi ${angkaStok}!`);
-        // renderUlangKatalog(); // panggil fungsi render tabel Anda
+    // --- DATA KATALOG PRODUK ---
+    let products = [
+      { id: 1, name: "Odol", price: 10000, stock: 8, icon: "📦" },
+      { id: 2, name: "Produk B", price: 15000, stock: 0, icon: "☕" },
+      { id: 3, name: "Pentol", price: 50000, stock: 0, icon: "📦" }
+    ];
+
+    let selectedProductId = null;
+
+    // 1. PIN GATEKEEPER
+    function verifikasiPin() {
+      const pinVal = document.getElementById("inputPin").value;
+      if (pinVal === CORRECT_PIN) {
+        isUnlocked = true;
+        document.getElementById("pinModal").style.display = "none";
+        document.getElementById("pinError").style.display = "none";
       } else {
-        alert("Harap masukkan angka yang valid!");
+        document.getElementById("pinError").style.display = "block";
       }
     }
-  }
 
-  // FITUR 3: Hapus Produk (KONFIRMASI DIALOG TANPA PIN)
-  function hapusProduk(idProduk, namaProduk) {
-    let konfirmasi = confirm(`Apakah Anda yakin ingin menghapus "${namaProduk}"?`);
-    if (konfirmasi) {
-      // Logic hapus produk milik Anda dimasukkan di sini...
-      alert(`Produk "${namaProduk}" berhasil dihapus.`);
-      // renderUlangKatalog(); // panggil fungsi render tabel Anda
+    function cekAksesKelolaToko() {
+      if (!isUnlocked) {
+        document.getElementById("inputPin").value = "";
+        document.getElementById("pinModal").style.display = "flex";
+      }
     }
-  }
-</script>
+
+    // 2. RENDER KATALOG & STATS
+    function renderKatalog() {
+      const listEl = document.getElementById("productList");
+      listEl.innerHTML = "";
+
+      let totalStokUnit = 0;
+
+      products.forEach(p => {
+        totalStokUnit += Number(p.stock);
+
+        const card = document.createElement("div");
+        card.className = "product-card";
+        card.innerHTML = `
+          <div class="product-info">
+            <div class="product-icon">${p.icon || '📦'}</div>
+            <div class="product-details">
+              <div class="product-name-price">
+                ${p.name} - <span class="product-price">Rp ${Number(p.price).toLocaleString("id-ID")}</span>
+              </div>
+              <div class="product-stock">(Stok: ${p.stock})</div>
+            </div>
+          </div>
+          <div class="product-actions">
+            <button class="btn-edit-stock" onclick="bukaEditModal(${p.id})">
+              <span>✏️</span> Edit Stok
+            </button>
+            <button class="btn-delete" onclick="bukaDeleteModal(${p.id})">
+              Hapus
+            </button>
+          </div>
+        `;
+        listEl.appendChild(card);
+      });
+
+      // Update Header Stats
+      document.getElementById("statsText").innerText = 
+        `Total Jenis: ${products.length} | Total Stok: ${totalStokUnit} Unit`;
+    }
+
+    // 3. TAMBAH PRODUK BARU (TANPA PIN)
+    function tambahProduk(e) {
+      e.preventDefault();
+      const harga = document.getElementById("hargaProduk").value;
+      const stok = document.getElementById("stokProduk").value;
+      const emoji = document.getElementById("emojiProduk").value || "📦";
+
+      if (!harga || !stok) return;
+
+      const newId = Date.now();
+      const newProduct = {
+        id: newId,
+        name: `Produk Baru`,
+        price: Number(harga),
+        stock: Number(stok),
+        icon: emoji
+      };
+
+      products.unshift(newProduct);
+      renderKatalog();
+
+      // Reset form
+      document.getElementById("hargaProduk").value = "";
+      document.getElementById("stokProduk").value = "";
+      document.getElementById("emojiProduk").value = "";
+    }
+
+    // 4. EDIT STOK (TANPA PIN)
+    function bukaEditModal(id) {
+      const prod = products.find(p => p.id === id);
+      if (!prod) return;
+      selectedProductId = id;
+      document.getElementById("editModalSubtitle").innerText = `Ubah jumlah stok untuk ${prod.name}`;
+      document.getElementById("inputEditStok").value = prod.stock;
+      document.getElementById("editModal").style.display = "flex";
+    }
+
+    function tutupEditModal() {
+      document.getElementById("editModal").style.display = "none";
+      selectedProductId = null;
+    }
+
+    function simpanStokBaru() {
+      const val = document.getElementById("inputEditStok").value;
+      if (val !== "" && selectedProductId) {
+        products = products.map(p => {
+          if (p.id === selectedProductId) {
+            return { ...p, stock: Number(val) };
+          }
+          return p;
+        });
+        renderKatalog();
+        tutupEditModal();
+      }
+    }
+
+    // 5. HAPUS PRODUK (DENGAN KONFIRMASI TANPA PIN)
+    function bukaDeleteModal(id) {
+      const prod = products.find(p => p.id === id);
+      if (!prod) return;
+      selectedProductId = id;
+      document.getElementById("deleteModalSubtitle").innerText = `Apakah Anda yakin ingin menghapus "${prod.name}"?`;
+      document.getElementById("deleteModal").style.display = "flex";
+    }
+
+    function tutupDeleteModal() {
+      document.getElementById("deleteModal").style.display = "none";
+      selectedProductId = null;
+    }
+
+    function konfirmasiHapusProduk() {
+      if (selectedProductId) {
+        products = products.filter(p => p.id !== selectedProductId);
+        renderKatalog();
+        tutupDeleteModal();
+      }
+    }
+
+    // Enter key trigger for PIN Input
+    document.getElementById("inputPin").addEventListener("keypress", function(e) {
+      if (e.key === "Enter") {
+        verifikasiPin();
+      }
+    });
+
+    // Initial Render
+    renderKatalog();
+  </script>
+</body>
+</html>
