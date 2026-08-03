@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplikasi Kasir Sederhana</title>
+    <!-- Tailwind CSS untuk tampilan agar langsung rapi -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-gray-100 p-4 md:p-8 font-sans">
+    
+    <div class="max-w-5xl mx-auto">
+        <h1 class="text-3xl font-bold text-center mb-8 text-blue-700">Aplikasi Kasir TokoKu</h1>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Bagian Kiri: Daftar Produk -->
+            <div class="bg-white p-6 rounded-xl shadow-md border-t-4 border-blue-500">
+                <h2 class="text-2xl font-bold mb-4">Daftar Menu</h2>
+                <div id="product-list" class="grid grid-cols-2 gap-4">
+                    <!-- Produk akan dimuat oleh JavaScript -->
+                </div>
+            </div>
+
+            <!-- Bagian Kanan: Keranjang Kasir -->
+            <div class="bg-white p-6 rounded-xl shadow-md border-t-4 border-green-500 flex flex-col">
+                <h2 class="text-2xl font-bold mb-4">Keranjang Belanja</h2>
+                
+                <div id="cart-items" class="flex-1 overflow-y-auto min-h-[250px] border-b-2 border-gray-200 mb-4 pb-4">
+                    <!-- Item keranjang masuk ke sini -->
+                </div>
+                
+                <div class="flex justify-between items-center mb-4 mt-auto">
+                    <span class="text-xl font-bold text-gray-700">Total:</span>
+                    <span id="total-price" class="text-3xl font-bold text-green-600">Rp 0</span>
+                </div>
+                
+                <button id="btn-bayar" onclick="bayar()" class="w-full bg-green-600 text-white font-bold text-lg py-4 rounded-lg hover:bg-green-700 transition shadow-lg">
+                    BAYAR & SIMPAN DATA
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* ==========================================
+           1. KONFIGURASI SUPABASE (NANTI DIGANTI SETELAH BIKIN AKUN)
+           ========================================== */
+        const SUPABASE_URL = 'https://GANTI_DENGAN_PROJECT_URL_KAMU.supabase.co';
+        const SUPABASE_ANON_KEY = 'GANTI_DENGAN_ANON_KEY_KAMU';
+        
+        // Inisialisasi koneksi ke database
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        /* ==========================================
+           2. DATA PRODUK & KERANJANG
+           ========================================== */
+        const products = [
+            { id: 1, name: 'Kopi Susu', price: 15000, img: '☕' },
+            { id: 2, name: 'Teh Es', price: 5000, img: '🧊' },
+            { id: 3, name: 'Nasi Goreng', price: 20000, img: '🍛' },
+            { id: 4, name: 'Mie Ayam', price: 15000, img: '🍜' },
+        ];
+
+        let cart = [];
+
+        /* ==========================================
+           3. LOGIKA APLIKASI KASIR
+           ========================================== */
+        function renderProducts() {
+            const productContainer = document.getElementById('product-list');
+            productContainer.innerHTML = '';
+            products.forEach(p => {
+                productContainer.innerHTML += `
+                    <div class="border border-gray-200 p-4 rounded-lg text-center cursor-pointer hover:bg-blue-50 hover:border-blue-300 transition shadow-sm" onclick="addToCart(${p.id})">
+                        <div class="text-5xl mb-2">${p.img}</div>
+                        <h3 class="font-bold text-gray-800">${p.name}</h3>
+                        <p class="text-blue-600 font-semibold">Rp ${p.price.toLocaleString('id-ID')}</p>
+                    </div>
+                `;
+            });
+        }
+
+        function addToCart(productId) {
+            const product = products.find(p => p.id === productId);
+            const existing = cart.find(item => item.id === productId);
+            
+            if (existing) {
+                existing.qty += 1;
+            } else {
+                cart.push({ ...product, qty: 1 });
+            }
+            renderCart();
+        }
+
+        function renderCart() {
+            const cartContainer = document.getElementById('cart-items');
+            const totalContainer = document.getElementById('total-price');
+            
+            if (cart.length === 0) {
+                cartContainer.innerHTML = '<p class="text-gray-400 italic text-center mt-10">Keranjang masih kosong...</p>';
+                totalContainer.innerText = 'Rp 0';
+                return;
+            }
+
+            cartContainer.innerHTML = '';
+            let total = 0;
+
+            cart.forEach((item, index) => {
+                const subtotal = item.price * item.qty;
+                total += subtotal;
+                
+                cartContainer.innerHTML += `
+                    <div class="flex justify-between items-center mb-3 bg-gray-50 p-3 rounded-lg border border-gray-100">
+                        <div>
+                            <p class="font-bold text-gray-800">${item.name}</p>
+                            <p class="text-sm text-gray-500">${item.qty} x Rp ${item.price.toLocaleString('id-ID')}</p>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <p class="font-bold text-gray-800">Rp ${subtotal.toLocaleString('id-ID')}</p>
+                            <button onclick="removeFromCart(${index})" class="bg-red-100 text-red-600 px-3 py-1 rounded-md text-sm font-bold hover:bg-red-200">X</button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            totalContainer.innerText = `Rp ${total.toLocaleString('id-ID')}`;
+        }
+
+        function removeFromCart(index) {
+            cart.splice(index, 1);
+            renderCart();
+        }
+
+        /* ==========================================
+           4. SIMPAN KE DATABASE SUPABASE
+           ========================================== */
+        async function bayar() {
+            if (cart.length === 0) {
+                alert("Keranjang masih kosong!");
+                return;
+            }
+
+            const totalBayar = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+            const btnBayar = document.getElementById('btn-bayar');
+            
+            // Ubah tombol jadi status loading
+            btnBayar.innerText = "⏳ Menyimpan data...";
+            btnBayar.disabled = true;
+            btnBayar.classList.replace('bg-green-600', 'bg-gray-500');
+
+            try {
+                // Proses simpan ke tabel 'transaksi' di Supabase
+                const { data, error } = await supabase
+                    .from('transaksi')
+                    .insert([
+                        { 
+                            total_harga: totalBayar, 
+                            detail_pesanan: cart
+                        }
+                    ]);
+
+                if (error) throw error;
+
+                alert("✅ Pembayaran Berhasil! Data sudah masuk ke Supabase.");
+                cart = []; // Kosongkan keranjang
+                renderCart();
+            } catch (error) {
+                console.error("Error Supabase:", error);
+                alert("❌ Gagal menyimpan ke database! Pastikan URL dan Key Supabase sudah benar.");
+            } finally {
+                // Kembalikan tombol seperti semula
+                btnBayar.innerText = "BAYAR & SIMPAN DATA";
+                btnBayar.disabled = false;
+                btnBayar.classList.replace('bg-gray-500', 'bg-green-600');
+            }
+        }
+
+        // Jalankan aplikasi saat pertama kali dibuka
+        renderProducts();
+        renderCart();
+    </script>
+</body>
+</html>
