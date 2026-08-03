@@ -116,7 +116,7 @@
             <!-- Profil Toko & Security -->
             <div class="bg-white p-5 rounded-2xl shadow-sm border border-orange-100">
                 <h2 class="font-bold text-gray-800 mb-4 text-base flex items-center gap-2">
-                    <span>⚙️</span> Profil Toko & Keamanan PIN
+                    <span>⚙️</span> Profil Toko & Keamanan Restock
                 </h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
@@ -132,8 +132,8 @@
                         <input type="text" id="cfg-alamat-toko" class="w-full p-2.5 border rounded-lg text-sm border-gray-300">
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-gray-600 mb-1">PIN Pemilik/Owner (4 Digit)</label>
-                        <input type="password" maxlength="6" id="cfg-pin-toko" placeholder="Default: 1234" class="w-full p-2.5 border rounded-lg text-sm border-gray-300 font-mono">
+                        <label class="block text-xs font-bold text-gray-600 mb-1">PIN Otentikasi Restock (Default: 1234)</label>
+                        <input type="password" maxlength="6" id="cfg-pin-toko" placeholder="1234" class="w-full p-2.5 border rounded-lg text-sm border-gray-300 font-mono">
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-gray-600 mb-1">Info Rekening Transfer</label>
@@ -149,19 +149,19 @@
                 </button>
             </div>
 
-            <!-- Tambah Produk Baru -->
+            <!-- Tambah Produk Baru (Proteksi PIN Restock) -->
             <div class="bg-white p-5 rounded-2xl shadow-sm border border-orange-100">
                 <h2 class="font-bold text-gray-800 mb-4 text-base flex items-center gap-2">
-                    <span>➕</span> Tambah Produk Baru
+                    <span>➕</span> Tambah Produk Baru / Restock
                 </h2>
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                     <input type="text" id="new-prod-name" placeholder="Nama Barang" class="p-2.5 border rounded-lg text-sm border-gray-300">
                     <input type="text" id="new-prod-price" oninput="formatRupiahInput(this)" placeholder="Harga (Rp: 100.000)" class="p-2.5 border rounded-lg text-sm border-gray-300">
-                    <input type="text" id="new-prod-stock" oninput="formatRupiahInput(this)" placeholder="Stok (Unit: 30)" class="p-2.5 border rounded-lg text-sm border-gray-300">
+                    <input type="text" id="new-prod-stock" oninput="formatRupiahInput(this)" placeholder="Stok Awal (Unit: 30)" class="p-2.5 border rounded-lg text-sm border-gray-300">
                     <input type="text" id="new-prod-icon" placeholder="Emoji Icon (🍯/☕/👕)" class="p-2.5 border rounded-lg text-sm border-gray-300">
                 </div>
-                <button onclick="mintaPinLaluEksekusi(tambahProduk)" class="bg-orange-500 hover:bg-orange-600 text-white font-bold px-5 py-2.5 rounded-lg text-sm transition">
-                    Tambah Produk ke Inventori
+                <button onclick="mintaPinLaluEksekusi(tambahProduk)" class="bg-orange-500 hover:bg-orange-600 text-white font-bold px-5 py-2.5 rounded-lg text-sm transition flex items-center gap-2">
+                    <span>🔒</span> Tambah Produk Baru
                 </button>
 
                 <hr class="my-6 border-orange-100">
@@ -194,39 +194,43 @@
                     </div>
                 </div>
 
-                <!-- Box Card Ringkasan Laporan -->
-                <div class="bg-gradient-to-r from-orange-500 to-amber-500 text-white p-5 rounded-2xl shadow-md mb-4 flex justify-between items-center">
+                <!-- Box Card Ringkasan Laporan (Bersih Tanpa Tombol Reset Bahaya) -->
+                <div class="bg-gradient-to-r from-orange-500 to-amber-500 text-white p-5 rounded-2xl shadow-md mb-6 flex justify-between items-center">
                     <div>
                         <p class="text-xs text-orange-100 font-bold uppercase tracking-wider" id="label-omzet">TOTAL OMZET (HARI INI)</p>
                         <h3 id="report-omzet" class="text-3xl font-black mt-1">Rp 0</h3>
                         <p id="report-tx-count" class="text-xs text-orange-100 mt-1">0 Transaksi Sukses</p>
                     </div>
-                    <div class="flex flex-col gap-2">
-                        <button onclick="exportKeExcel()" class="text-xs bg-white text-orange-600 px-3 py-2 rounded-xl font-bold transition shadow-sm hover:bg-orange-50">
-                            📥 Export Excel
-                        </button>
-                        <button onclick="mintaPinLaluEksekusi(resetLaporan)" class="text-xs bg-red-700/80 hover:bg-red-800 text-white px-3 py-1.5 rounded-xl font-bold transition">
-                            🗑️ Reset Data
+                    <div>
+                        <button onclick="exportKeExcel()" class="text-xs bg-white text-orange-600 px-4 py-2.5 rounded-xl font-bold transition shadow-sm hover:bg-orange-50 active:scale-95 flex items-center gap-1.5">
+                            <span>📥</span> Export Excel
                         </button>
                     </div>
                 </div>
 
                 <h3 class="font-bold text-gray-700 mb-3 text-sm">Riwayat Transaksi</h3>
-                <div id="history-list" class="space-y-2.5 max-h-96 overflow-y-auto">
+                <div id="history-list" class="space-y-2.5 max-h-96 overflow-y-auto mb-6">
                     <!-- Dimuat via JS -->
+                </div>
+
+                <!-- Tombol Reset Laporan Dipindah Paling Bawah Biar Aman -->
+                <div class="pt-4 border-t border-gray-100 text-center">
+                    <button onclick="resetLaporan()" class="text-xs text-red-500 hover:text-red-700 font-semibold px-3 py-1.5 rounded-lg hover:bg-red-50 transition">
+                        🗑️ Reset / Hapus Semua Laporan Penjualan
+                    </button>
                 </div>
             </div>
         </div>
 
     </div>
 
-    <!-- MODAL POPUP VERIFIKASI PIN OWNER -->
+    <!-- MODAL POPUP VERIFIKASI PIN RESTOCK -->
     <div id="modal-pin" class="fixed inset-0 bg-black/60 hidden flex items-center justify-center p-4 z-50 backdrop-blur-sm">
         <div class="bg-white p-6 rounded-3xl max-w-xs w-full space-y-4 shadow-2xl border border-orange-100 text-center">
-            <div class="text-3xl">🔒</div>
-            <h3 class="font-bold text-gray-800 text-sm">Akses Terkunci (PIN Owner)</h3>
-            <p class="text-xs text-gray-500">Masukkan PIN Pemilik untuk melanjutkan aksi sensitif ini.</p>
-            <input type="password" id="input-pin-verify" maxlength="6" placeholder="Masukkan PIN" class="w-full p-3 border rounded-xl text-center font-mono font-bold text-lg tracking-widest border-gray-300 focus:ring-2 focus:ring-orange-500 focus:outline-none">
+            <div class="text-3xl">🔑</div>
+            <h3 class="font-bold text-gray-800 text-sm">Konfirmasi PIN Restock</h3>
+            <p class="text-xs text-gray-500">Masukkan PIN Pemilik untuk menambah/mengubah stok barang.</p>
+            <input type="password" id="input-pin-verify" maxlength="6" placeholder="Default: 1234" class="w-full p-3 border rounded-xl text-center font-mono font-bold text-lg tracking-widest border-gray-300 focus:ring-2 focus:ring-orange-500 focus:outline-none">
             <div class="grid grid-cols-2 gap-2">
                 <button onclick="verifikasiPinDanJalankan()" class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2.5 rounded-xl text-xs transition">Konfirmasi</button>
                 <button onclick="tutupModalPin()" class="bg-gray-200 text-gray-700 font-bold py-2.5 rounded-xl text-xs transition">Batal</button>
@@ -234,10 +238,10 @@
         </div>
     </div>
 
-    <!-- MODAL POPUP EDIT PRODUK (GANTI PROMPT BROWSER) -->
+    <!-- MODAL POPUP EDIT PRODUK / RESTOCK -->
     <div id="modal-edit-prod" class="fixed inset-0 bg-black/60 hidden flex items-center justify-center p-4 z-50 backdrop-blur-sm">
         <div class="bg-white p-5 rounded-3xl max-w-sm w-full space-y-3 shadow-2xl border border-orange-100">
-            <h3 class="font-bold text-gray-800 text-sm">✏️ Edit Produk & Stok</h3>
+            <h3 class="font-bold text-gray-800 text-sm">✏️ Edit Produk & Restock Barang</h3>
             <input type="hidden" id="edit-prod-id">
             <div>
                 <label class="text-xs font-bold text-gray-600">Nama Produk</label>
@@ -258,11 +262,11 @@
         </div>
     </div>
 
-    <!-- MODAL POPUP FULL EDIT TRANSAKSI -->
+    <!-- MODAL POPUP EDIT TRANSAKSI + AMAN DARI ACCIDENTAL HAPUS -->
     <div id="modal-edit-tx" class="fixed inset-0 bg-black/60 hidden flex items-center justify-center p-4 z-50 backdrop-blur-sm">
         <div class="bg-white p-5 rounded-3xl max-w-md w-full space-y-4 shadow-2xl border border-orange-100 max-h-[90vh] flex flex-col">
             <div class="flex justify-between items-center border-b pb-2">
-                <h3 class="font-bold text-gray-800 text-sm">✏️ Edit Penuh Data Transaksi</h3>
+                <h3 class="font-bold text-gray-800 text-sm">✏️ Edit Detail Transaksi</h3>
                 <button onclick="tutupModalEditTx()" class="text-gray-400 font-bold">✕</button>
             </div>
             
@@ -275,7 +279,7 @@
                 </div>
 
                 <div>
-                    <label class="font-bold text-gray-700 block mb-1">Tambah Barang Baru ke Transaksi Ini:</label>
+                    <label class="font-bold text-gray-700 block mb-1">Tambah Barang Tambahan:</label>
                     <select id="edit-tx-select-add" onchange="tambahItemKeEditTx(this.value)" class="w-full p-2 border rounded-lg bg-white border-gray-300">
                         <option value="">-- Pilih Produk Tambahan --</option>
                     </select>
@@ -299,17 +303,23 @@
                 </div>
 
                 <div>
-                    <label class="font-bold text-gray-700 block mb-1">Alasan / Catatan Perubahan:</label>
-                    <input type="text" id="edit-tx-catatan" placeholder="Contoh: Pembeli minta kurangi 1 barang" class="w-full p-2 border rounded-lg border-gray-300">
+                    <label class="font-bold text-gray-700 block mb-1">Catatan / Alasan Edit:</label>
+                    <input type="text" id="edit-tx-catatan" placeholder="Contoh: Pembeli ganti item" class="w-full p-2 border rounded-lg border-gray-300">
                 </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-2 pt-2 border-t">
-                <button onclick="simpanPerubahanEditTx()" class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2.5 rounded-xl text-xs transition">
-                    💾 Simpan Perubahan
-                </button>
-                <button onclick="tutupModalEditTx()" class="bg-gray-200 text-gray-700 font-bold py-2.5 rounded-xl text-xs transition">
-                    Batal (Tidak Jadi)
+            <div class="space-y-2 pt-2 border-t">
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="simpanPerubahanEditTx()" class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2.5 rounded-xl text-xs transition">
+                        💾 Simpan Perubahan
+                    </button>
+                    <button onclick="tutupModalEditTx()" class="bg-gray-200 text-gray-700 font-bold py-2.5 rounded-xl text-xs transition">
+                        Batal
+                    </button>
+                </div>
+                <!-- Hapus Transaksi Dipindah Ke Dalam Modal Agar Sangat Aman -->
+                <button onclick="hapusTransaksiDariEditModal()" class="w-full text-red-600 hover:text-red-700 font-bold text-xs py-1.5 transition text-center">
+                    🗑️ Hapus Transaksi Ini Permanen
                 </button>
             </div>
         </div>
@@ -351,7 +361,7 @@
                 </button>
             </div>
 
-            <button onclick="mintaPinLaluEksekusi(batalkanTransaksi)" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-2.5 rounded-xl text-xs transition shadow-sm">
+            <button onclick="batalkanTransaksi()" class="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-2.5 rounded-xl text-xs transition shadow-sm">
                 ❌ Batalkan Transaksi
             </button>
 
@@ -405,7 +415,7 @@
             renderLaporan();
         }
 
-        /* FORMAT RIBUAN DENGAN TITIK (100.000) */
+        /* FORMAT RIBUAN DENGAN TITIK */
         function formatRupiahInput(input) {
             let val = input.value.replace(/\D/g, '');
             input.value = val ? parseInt(val, 10).toLocaleString('id-ID') : '';
@@ -415,19 +425,25 @@
             return parseFloat(String(str).replace(/\D/g, '')) || 0;
         }
 
-        /* VERIFIKASI PIN SECURITY */
+        /* VERIFIKASI PIN KHUSUS RESTOCK (DIPERBAIKI) */
         function mintaPinLaluEksekusi(actionFunction) {
             pendingAction = actionFunction;
             document.getElementById('input-pin-verify').value = '';
             document.getElementById('modal-pin').classList.remove('hidden');
         }
         function verifikasiPinDanJalankan() {
-            const pinMasuk = document.getElementById('input-pin-verify').value;
-            if(pinMasuk === (storeConfig.pin || '1234')) {
+            const pinMasuk = String(document.getElementById('input-pin-verify').value).trim();
+            const pinBenar = String(storeConfig.pin || '1234').trim();
+            
+            if(pinMasuk === pinBenar) {
                 tutupModalPin();
-                if(pendingAction) pendingAction();
+                if(pendingAction) {
+                    const act = pendingAction;
+                    pendingAction = null;
+                    act();
+                }
             } else {
-                alert("❌ PIN Pemilik Salah!");
+                alert("❌ PIN Salah! Pastikan memasukkan PIN yang benar (Default: 1234).");
             }
         }
         function tutupModalPin() {
@@ -446,7 +462,7 @@
             });
         }
 
-        /* KASIR & PRODUK (DENGAN STRICT ZERO STOCK LOCK) */
+        /* KASIR & PRODUK */
         function renderProducts() {
             const query = document.getElementById('search-product')?.value.toLowerCase() || '';
             const grid = document.getElementById('product-grid');
@@ -465,7 +481,7 @@
                 const isOutOfStock = stock <= 0;
 
                 grid.innerHTML += `
-                    <div onclick="${isOutOfStock ? `alert('❌ Stok produk ini telah habis!')` : `addToCart(${p.id})`}" 
+                    <div onclick="${isOutOfStock ? `alert('❌ Stok produk ini habis!')` : `addToCart(${p.id})`}" 
                          class="border border-orange-100 p-3 rounded-xl text-center transition shadow-sm bg-white relative ${isOutOfStock ? 'opacity-40 bg-gray-100 cursor-not-allowed border-red-200' : 'cursor-pointer hover:bg-orange-50/50 hover:border-orange-300 active:scale-95'}">
                         <div class="text-3xl mb-1">${p.img}</div>
                         <h4 class="font-bold text-xs text-gray-800 leading-tight">${p.name}</h4>
@@ -565,7 +581,6 @@
             if(cart.length === 0) return alert("Keranjang belanja kosong!");
             if(bayar < total) return alert("Nominal uang pembayaran kurang!");
 
-            // Potong Stok Otomatis
             cart.forEach(item => {
                 const p = products.find(prod => prod.id === item.id);
                 if(p) p.stock = Math.max(0, p.stock - item.qty);
@@ -588,7 +603,6 @@
             transactions.unshift(currentTx);
             localStorage.setItem('mp_tx', JSON.stringify(transactions));
 
-            // Populate Struk Modal
             document.getElementById('rec-nama-toko').innerText = storeConfig.nama;
             document.getElementById('rec-alamat-toko').innerText = storeConfig.alamat;
             document.getElementById('rec-hp-toko').innerText = storeConfig.hp;
@@ -617,7 +631,7 @@
 
         function batalkanTransaksi() {
             if(!currentTx) return;
-            if(confirm("Batalkan transaksi ini? Stok barang akan otomatis dikembalikan.")) {
+            if(confirm("Batalkan transaksi ini? Stok barang akan dikembalikan.")) {
                 currentTx.items.forEach(item => {
                     const p = products.find(prod => prod.id === item.id);
                     if(p) p.stock += item.qty;
@@ -631,7 +645,7 @@
                 renderProducts();
                 renderCatalogManage();
                 renderLaporan();
-                alert("❌ Transaksi dibatalkan dan stok telah dikembalikan.");
+                alert("❌ Transaksi dibatalkan.");
             }
         }
 
@@ -653,16 +667,14 @@
         }
         function tutupModalStruk() { document.getElementById('modal-struk').classList.add('hidden'); }
 
-        /* FULL EDIT TRANSAKSI PENUH (WITH STOK RECONCILIATION) */
+        /* FULL EDIT TRANSAKSI (TANPA PERLU PIN - DILENGKAPI SAFETY DELETE) */
         function bukaModalEditTx(id) {
             const tx = transactions.find(t => t.id === id);
             if(!tx) return;
 
-            mintaPinLaluEksekusi(() => {
-                editingTxCopy = JSON.parse(JSON.stringify(tx));
-                renderModalEditTxContent();
-                document.getElementById('modal-edit-tx').classList.remove('hidden');
-            });
+            editingTxCopy = JSON.parse(JSON.stringify(tx));
+            renderModalEditTxContent();
+            document.getElementById('modal-edit-tx').classList.remove('hidden');
         }
 
         function renderModalEditTxContent() {
@@ -693,7 +705,6 @@
             document.getElementById('edit-tx-metode').value = editingTxCopy.metode || 'Tunai';
             document.getElementById('edit-tx-catatan').value = editingTxCopy.catatanEdit || '';
 
-            // Populate dropdown barang tambahan
             const selectAdd = document.getElementById('edit-tx-select-add');
             selectAdd.innerHTML = '<option value="">-- Pilih Produk Tambahan --</option>';
             products.forEach(p => {
@@ -706,7 +717,6 @@
             const p = products.find(prod => prod.id === item.id);
             
             if (delta > 0 && p) {
-                // Cek ketersediaan stok
                 const origTx = transactions.find(t => t.id === editingTxCopy.id);
                 const origItem = origTx ? origTx.items.find(i => i.id === item.id) : null;
                 const origQty = origItem ? origItem.qty : 0;
@@ -745,13 +755,13 @@
 
         function simpanPerubahanEditTx() {
             if(editingTxCopy.items.length === 0) {
-                return alert("Transaksi tidak boleh kosong! Jika ingin membatalkan, hapus transaksi saja.");
+                return alert("Transaksi tidak boleh kosong!");
             }
 
             const origTx = transactions.find(t => t.id === editingTxCopy.id);
             if(!origTx) return;
 
-            // 1. Reconcile Stok (Kembalikan stok lama, kurangi stok baru)
+            // Reconcile Stok
             origTx.items.forEach(oldItem => {
                 const p = products.find(prod => prod.id === oldItem.id);
                 if(p) p.stock += oldItem.qty;
@@ -763,7 +773,6 @@
             });
             localStorage.setItem('mp_products', JSON.stringify(products));
 
-            // 2. Update data transaksi
             const totalBaru = editingTxCopy.items.reduce((s, i) => s + (i.price * i.qty), 0);
             origTx.items = editingTxCopy.items;
             origTx.total = totalBaru;
@@ -778,7 +787,30 @@
             renderProducts();
             renderCatalogManage();
             renderLaporan();
-            alert("✅ Transaksi & Stok berhasil diperbarui secara penuh!");
+            alert("✅ Transaksi berhasil diperbarui!");
+        }
+
+        function hapusTransaksiDariEditModal() {
+            if(!editingTxCopy) return;
+            if(confirm("Yakin ingin menghapus transaksi ini? Stok barang akan dikembalikan.")) {
+                const origTx = transactions.find(t => t.id === editingTxCopy.id);
+                if(origTx) {
+                    origTx.items.forEach(item => {
+                        const p = products.find(prod => prod.id === item.id);
+                        if(p) p.stock += item.qty;
+                    });
+                    localStorage.setItem('mp_products', JSON.stringify(products));
+                }
+
+                transactions = transactions.filter(t => t.id !== editingTxCopy.id);
+                localStorage.setItem('mp_tx', JSON.stringify(transactions));
+
+                tutupModalEditTx();
+                renderProducts();
+                renderCatalogManage();
+                renderLaporan();
+                alert("🗑️ Transaksi telah dihapus.");
+            }
         }
 
         function tutupModalEditTx() {
@@ -826,7 +858,7 @@
 
             txFiltered.forEach(t => {
                 list.innerHTML += `
-                    <div class="border border-orange-100 p-3.5 rounded-xl text-xs bg-orange-50/30 shadow-sm space-y-2">
+                    <div class="border border-orange-100 p-3.5 rounded-xl text-xs bg-white shadow-sm space-y-2">
                         <div class="flex justify-between items-start">
                             <div>
                                 <p class="font-bold text-gray-800">${t.tgl} <span class="text-gray-400 font-normal">(${t.jam || ''})</span></p>
@@ -838,33 +870,24 @@
                             </div>
                         </div>
 
-                        ${t.catatanEdit ? `<p class="text-[10px] bg-amber-50 text-amber-800 p-1.5 rounded border border-amber-200"><b>Alasan Edit:</b> ${t.catatanEdit}</p>` : ''}
+                        ${t.catatanEdit ? `<p class="text-[10px] bg-amber-50 text-amber-800 p-1.5 rounded border border-amber-200"><b>Catatan:</b> ${t.catatanEdit}</p>` : ''}
 
-                        <div class="flex gap-3 justify-end pt-1 border-t border-orange-100">
-                            <button onclick="bukaModalEditTx(${t.id})" class="text-blue-600 font-bold text-[11px] hover:underline flex items-center gap-1">✏️ Edit Penuh</button>
-                            <button onclick="mintaPinLaluEksekusi(() => hapusTransaksi(${t.id}))" class="text-red-600 font-bold text-[11px] hover:underline flex items-center gap-1">🗑️ Hapus</button>
+                        <div class="flex gap-3 justify-end pt-1 border-t border-gray-100">
+                            <button onclick="bukaModalEditTx(${t.id})" class="text-blue-600 font-bold text-[11px] hover:underline flex items-center gap-1">✏️ Edit / Detail Transaksi</button>
                         </div>
                     </div>
                 `;
             });
         }
 
-        function hapusTransaksi(id) {
-            if(confirm("Yakin hapus transaksi ini dari riwayat?")) {
-                transactions = transactions.filter(t => t.id !== id);
-                localStorage.setItem('mp_tx', JSON.stringify(transactions));
-                renderLaporan();
-            }
-        }
-
         function resetLaporan() {
-            const konfirmasiTeks = prompt("PERINGATAN BAHAYA!\nSemua data transaksi akan terhapus permanen.\n\nKetik kata 'HAPUS' untuk mengonfirmasi:");
+            const konfirmasiTeks = prompt("PERINGATAN BAHAYA!\nSemua data laporan transaksi akan terhapus permanen.\n\nKetik kata 'HAPUS' untuk mengonfirmasi:");
             if(konfirmasiTeks === 'HAPUS') {
                 transactions = [];
                 localStorage.setItem('mp_tx', JSON.stringify([]));
                 renderLaporan();
                 alert("🗑️ Seluruh data laporan berhasil di-reset.");
-            } else {
+            } else if(konfirmasiTeks !== null) {
                 alert("Reset dibatalkan. Kata konfirmasi tidak sesuai.");
             }
         }
@@ -883,7 +906,7 @@
             a.click();
         }
 
-        /* KELOLA PRODUK & MODAL EDIT PRODUK */
+        /* KELOLA PRODUK & RESTOCK BARANG */
         function simpanProfilToko() {
             storeConfig = {
                 nama: document.getElementById('cfg-nama-toko').value,
@@ -915,8 +938,8 @@
                             <span class="ml-2 font-semibold text-gray-500">(Stok: ${(p.stock || 0).toLocaleString('id-ID')})</span>
                         </div>
                         <div class="flex gap-2">
-                            <button onclick="bukaModalEditProd(${p.id})" class="text-blue-600 font-bold px-1.5 py-0.5 rounded hover:bg-blue-50">Edit</button>
-                            <button onclick="mintaPinLaluEksekusi(() => hapusProduk(${p.id}))" class="text-red-600 font-bold px-1.5 py-0.5 rounded hover:bg-red-50">Hapus</button>
+                            <button onclick="bukaModalEditProd(${p.id})" class="text-blue-600 font-bold px-2 py-1 rounded bg-blue-50 hover:bg-blue-100 flex items-center gap-1">🔒 Edit Stok</button>
+                            <button onclick="hapusProduk(${p.id})" class="text-red-500 font-bold px-1.5 py-0.5 hover:bg-red-50">Hapus</button>
                         </div>
                     </div>
                 `;
@@ -947,6 +970,7 @@
             const p = products.find(prod => prod.id === id);
             if(!p) return;
 
+            // Khusus Restock & Edit Stok Pakai PIN Protection
             mintaPinLaluEksekusi(() => {
                 document.getElementById('edit-prod-id').value = p.id;
                 document.getElementById('edit-prod-name').value = p.name;
@@ -969,7 +993,7 @@
             document.getElementById('modal-edit-prod').classList.add('hidden');
             renderProducts();
             renderCatalogManage();
-            alert("✅ Produk berhasil diperbarui!");
+            alert("✅ Restock / Edit produk berhasil diperbarui!");
         }
 
         function hapusProduk(id) {
