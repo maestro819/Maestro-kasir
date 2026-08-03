@@ -325,6 +325,7 @@
                     <p id="rec-alamat-toko" class="text-[10px] text-gray-600">Alamat</p>
                     <p id="rec-hp-toko" class="text-[10px] text-gray-600">HP</p>
                 </div>
+                <div id="rec-edit-notice" class="hidden bg-red-50 border border-red-200 rounded-lg p-2 text-center"></div>
                 <div class="text-[10px] text-gray-500 flex justify-between">
                     <span id="rec-metode">Metode: Tunai</span>
                     <span id="rec-tgl">Tgl</span>
@@ -600,18 +601,40 @@
             transactions.unshift(currentTx);
             localStorage.setItem('mp_tx', JSON.stringify(transactions));
 
-            // Populate Struk Modal
+            tampilkanStruk(currentTx);
+
+            cart = [];
+            document.getElementById('input-bayar').value = '';
+            document.getElementById('input-wa-pelanggan').value = '';
+            renderCart();
+            renderProducts();
+            renderCatalogManage();
+            renderLaporan();
+        }
+
+        function tampilkanStruk(tx) {
+            currentTx = tx;
+
             document.getElementById('rec-nama-toko').innerText = storeConfig.nama;
             document.getElementById('rec-alamat-toko').innerText = storeConfig.alamat;
             document.getElementById('rec-hp-toko').innerText = storeConfig.hp;
-            document.getElementById('rec-metode').innerText = `Metode: ${metode}`;
-            document.getElementById('rec-tgl').innerText = `${currentTx.tgl} ${currentTx.jam}`;
+            document.getElementById('rec-metode').innerText = `Metode: ${tx.metode}`;
+            document.getElementById('rec-tgl').innerText = `${tx.tgl} ${tx.jam}`;
+
+            const recEditNotice = document.getElementById('rec-edit-notice');
+            if(tx.isEdited) {
+                recEditNotice.innerHTML = `<p class="font-black text-red-600">✏️ TRANSAKSI SUDAH DIEDIT</p><p class="text-[10px] text-gray-700 mt-0.5">Alasan/Catatan: ${tx.catatanEdit || '-'}</p>`;
+                recEditNotice.classList.remove('hidden');
+            } else {
+                recEditNotice.innerHTML = '';
+                recEditNotice.classList.add('hidden');
+            }
 
             const recPaymentInfo = document.getElementById('rec-payment-info');
-            if(metode === 'QRIS' && storeConfig.qrisUrl) {
+            if(tx.metode === 'QRIS' && storeConfig.qrisUrl) {
                 recPaymentInfo.innerHTML = `<p class="font-bold text-orange-700 mb-1">Scan QRIS:</p><img src="${storeConfig.qrisUrl}" class="w-24 h-24 mx-auto rounded border object-contain bg-white p-1">`;
                 recPaymentInfo.classList.remove('hidden');
-            } else if(metode === 'Transfer' && storeConfig.bank) {
+            } else if(tx.metode === 'Transfer' && storeConfig.bank) {
                 recPaymentInfo.innerHTML = `<p class="font-bold text-orange-700">Transfer ke Rekening:</p><p class="font-mono font-bold">${storeConfig.bank}</p>`;
                 recPaymentInfo.classList.remove('hidden');
             } else {
@@ -621,22 +644,15 @@
 
             const recItems = document.getElementById('rec-items');
             recItems.innerHTML = '';
-            cart.forEach(c => {
+            tx.items.forEach(c => {
                 recItems.innerHTML += `<div class="flex justify-between"><span>${c.name} x${c.qty}</span><span>${(c.price*c.qty).toLocaleString('id-ID')}</span></div>`;
             });
 
-            document.getElementById('rec-total').innerText = `Rp ${total.toLocaleString('id-ID')}`;
-            document.getElementById('rec-bayar').innerText = `Rp ${bayar.toLocaleString('id-ID')}`;
-            document.getElementById('rec-kembali').innerText = `Rp ${(bayar - total).toLocaleString('id-ID')}`;
+            document.getElementById('rec-total').innerText = `Rp ${tx.total.toLocaleString('id-ID')}`;
+            document.getElementById('rec-bayar').innerText = `Rp ${tx.bayar.toLocaleString('id-ID')}`;
+            document.getElementById('rec-kembali').innerText = `Rp ${tx.kembali.toLocaleString('id-ID')}`;
 
             document.getElementById('modal-struk').classList.remove('hidden');
-            cart = [];
-            document.getElementById('input-bayar').value = '';
-            document.getElementById('input-wa-pelanggan').value = '';
-            renderCart();
-            renderProducts();
-            renderCatalogManage();
-            renderLaporan();
         }
 
         function batalkanTransaksi() {
@@ -830,7 +846,7 @@
             renderProducts();
             renderCatalogManage();
             renderLaporan();
-            alert("✅ Transaksi & Stok berhasil diperbarui secara penuh!");
+            tampilkanStruk(origTx);
         }
 
         function tutupModalEditTx() {
