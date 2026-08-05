@@ -1,221 +1,350 @@
-// ==========================================
-// 1. KONFIGURASI SUPABASE & DATABASE LOKAL
-// ==========================================
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MaestroPay POS</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Supabase JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Dexie.js (Offline Database) -->
+    <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans antialiased min-h-screen flex flex-col relative pt-8">
 
-// GANTI 2 BARIS DI BAWAH INI DENGAN DATA DARI SUPABASE ANDA
-const SUPABASE_URL = 'https://URL_SUPABASE_ANDA.supabase.co'; 
-const SUPABASE_KEY = 'ANON_KEY_SUPABASE_ANDA'; 
+    <!-- Indikator Status Offline / Sync -->
+    <div id="offline-indicator" style="display: none;" class="bg-red-500 text-white text-center p-1.5 text-xs font-bold z-50 fixed top-0 w-full shadow-md">
+        🔴 Mode Offline - Transaksi Tertunda: <span id="pending-count">0</span>
+    </div>
 
-// Inisialisasi Supabase Client
-const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-// Inisialisasi Database Lokal Dexie.js (Offline Storage)
-const db = new Dexie("MaestroPayDB");
-db.version(1).stores({
-    products: 'id, name, price, stock, barcode',
-    transactions: 'id, sync_status' // sync_status: 'pending' atau 'synced'
-});
-
-// ==========================================
-// 2. LOGIKA AUTENTIKASI (SUPABASE AUTH)
-// ==========================================
-
-// Process Login dengan Email & Password
-async function prosesLogin() {
-    const email = document.getElementById('login-email').value.trim();
-    const password = document.getElementById('login-password').value;
-    
-    if (!email || !password) {
-        alert("Email dan Password wajib diisi!");
-        return;
-    }
-
-    const { data, error } = await supabaseClient.auth.signInWithPassword({ 
-        email: email, 
-        password: password 
-    });
-
-    if (error) {
-        alert("Login Gagal: " + error.message);
-    } else {
-        tampilkanAplikasi(data.user.email);
-    }
-}
-
-// Process Logout
-async function prosesLogout() {
-    await supabaseClient.auth.signOut();
-    window.location.reload();
-}
-
-// Cek Sesi Login Saat Halaman Dibuka/Refresh
-async function cekSesiAktif() {
-    const { data: { session } } = await supabaseClient.auth.getSession();
-    if (session) {
-        tampilkanAplikasi(session.user.email);
-    } else {
-        document.getElementById('login-container').style.display = 'block';
-        document.getElementById('app-container').style.display = 'none';
-    }
-    updateOfflineUI();
-}
-
-function tampilkanAplikasi(email) {
-    document.getElementById('login-container').style.display = 'none';
-    document.getElementById('app-container').style.display = 'block';
-    
-    const emailLabel = document.getElementById('user-email-display');
-    if (emailLabel) emailLabel.innerText = "Terhubung sebagai: " + email;
-    
-    // Muat data produk begitu berhasil masuk
-    syncProductsToLocal();
-}
-
-// ==========================================
-// 3. LOGIKA PRODUK (SINKRONISASI LOKAL/SERVER)
-// ==========================================
-
-async function syncProductsToLocal() {
-    // 1. Jika Sedang Offline: Gunakan data lokal dari Dexie
-    if (!navigator.onLine) {
-        const localProducts = await db.products.toArray();
-        renderProduk(localProducts);
-        return;
-    }
-    
-    // 2. Jika Sedang Online: Tarik dari Supabase (Row Level Security / RLS aktif secara otomatis)
-    const { data, error } = await supabaseClient.from('products').select('*');
-    
-    if (error) {
-        console.error("Gagal mengambil produk dari Supabase:", error.message);
-        return;
-    }
-    
-    // 3. Perbarui database lokal Dexie
-    await db.products.clear();
-    if (data.length > 0) {
-        await db.products.bulkAdd(data);
-    }
-    
-    renderProduk(data);
-}
-
-function renderProduk(products) {
-    const container = document.getElementById('daftar-produk');
-    container.innerHTML = '';
-    
-    if (!products || products.length === 0) {
-        container.innerHTML = '<p class="text-gray-400 italic text-sm">Belum ada data produk di toko ini.</p>';
-        return;
-    }
-
-    products.forEach(p => {
-        container.innerHTML += `
-            <div class="flex justify-between items-center p-2.5 bg-gray-50 rounded border text-sm">
-                <div>
-                    <p class="font-semibold text-gray-800">${p.name}</p>
-                    <p class="text-xs text-gray-500">Stok: ${p.stock || 0}</p>
+    <!-- Halaman Login -->
+    <div id="login-container" class="flex-grow flex items-center justify-center p-4">
+        <div class="bg-white p-6 rounded-2xl shadow-xl w-full max-w-sm border border-gray-100">
+            <div class="text-center mb-6">
+                <div class="bg-blue-50 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-2 text-blue-600">
+                    <i data-lucide="store"></i>
                 </div>
-                <span class="font-bold text-blue-600">Rp ${(p.price || 0).toLocaleString('id-ID')}</span>
+                <h1 class="text-xl font-bold text-gray-800">MaestroPay POS</h1>
+                <p class="text-xs text-gray-400 mt-1">Masuk dengan Akun Toko Supabase</p>
             </div>
-        `;
-    });
-}
+            <form onsubmit="event.preventDefault(); prosesLogin();" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Email Toko/Kasir</label>
+                    <input type="email" id="login-email" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="kasir@toko.com" required>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Password</label>
+                    <input type="password" id="login-password" class="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="w-full bg-blue-600 text-white font-bold py-2.5 rounded-xl hover:bg-blue-700 transition duration-200 shadow-md text-sm">
+                    Masuk
+                </button>
+            </form>
+        </div>
+    </div>
 
-// ==========================================
-// 4. TRANSAKSI (OFFLINE-FIRST)
-// ==========================================
+    <!-- Halaman Utama Aplikasi POS -->
+    <div id="app-container" style="display: none;" class="flex-grow flex flex-col">
+        <!-- Header -->
+        <header class="bg-white border-b px-4 py-3 flex justify-between items-center sticky top-0 z-10 shadow-sm">
+            <div class="flex items-center space-x-2">
+                <div class="bg-blue-600 text-white p-1.5 rounded-lg">
+                    <i data-lucide="shopping-bag" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-gray-800 text-sm md:text-base leading-none">MaestroPay POS</h1>
+                    <span id="user-email-display" class="text-[10px] text-gray-400">Terhubung</span>
+                </div>
+            </div>
+            <button onclick="prosesLogout()" class="text-gray-500 hover:text-red-600 p-2 rounded-lg hover:bg-gray-50 transition">
+                <i data-lucide="log-out" class="w-5 h-5"></i>
+            </button>
+        </header>
 
-// Simulasi Kasir Melakukan Checkout
-async function simulasiCheckout() {
-    const txData = {
-        id: Date.now(), // Unique ID menggunakan Timestamp
-        total: 50000,
-        bayar: 50000,
-        kembali: 0,
-        metode: 'Tunai',
-        items: [{ name: 'Barang Contoh', qty: 1, price: 50000 }],
-        sync_status: 'pending' // Status penanda belum terkirim ke Supabase
-    };
+        <!-- Main Layout Kasir -->
+        <main class="flex-grow p-4 max-w-7xl mx-auto w-full grid grid-cols-1 md:grid-cols-3 gap-4">
+            
+            <!-- Kolom Katalog Produk (2 Kolom di Desktop) -->
+            <section class="md:col-span-2 flex flex-col bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="font-bold text-gray-800 flex items-center gap-2">
+                        <i data-lucide="grid" class="w-4 h-4 text-blue-600"></i> Katalog Produk
+                    </h2>
+                    <button onclick="syncProductsToLocal()" class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg font-medium flex items-center gap-1 transition">
+                        <i data-lucide="refresh-cw" class="w-3 h-3"></i> Sync
+                    </button>
+                </div>
+                
+                <div id="daftar-produk" class="grid grid-cols-2 sm:grid-cols-3 gap-3 overflow-y-auto max-h-[60vh] p-1">
+                    <!-- Dynamic Product List -->
+                </div>
+            </section>
 
-    // 1. SIMPAN KE DATABASE LOKAL TERLEBIH DAHULU (Sangat Cepat & Tidak Membutuhkan Internet)
-    await db.transactions.put(txData);
-    alert("Transaksi berhasil disimpan secara lokal!");
-    
-    // 2. Coba kirim data ke Supabase di latar belakang
-    triggerBackgroundSync();
-}
+            <!-- Kolom Keranjang Transaksi (1 Kolom di Desktop) -->
+            <section class="flex flex-col bg-white rounded-2xl p-4 shadow-sm border border-gray-100 justify-between">
+                <div>
+                    <h2 class="font-bold text-gray-800 mb-3 flex items-center gap-2">
+                        <i data-lucide="shopping-cart" class="w-4 h-4 text-blue-600"></i> Keranjang
+                    </h2>
+                    <div id="cart-items" class="space-y-2 max-h-48 overflow-y-auto border-b pb-3 mb-3">
+                        <!-- Dynamic Cart Items -->
+                    </div>
+                </div>
 
-// Background Sync: Kirim Transaksi Lokal ke Supabase Saat Online
-async function triggerBackgroundSync() {
-    if (!navigator.onLine) {
-        updateOfflineUI();
-        return;
-    }
+                <div class="space-y-3 pt-2">
+                    <div class="flex justify-between items-center font-bold text-base text-gray-800">
+                        <span>Total:</span>
+                        <span id="cart-total" class="text-blue-600">Rp 0</span>
+                    </div>
+                    <button onclick="prosesCheckout()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition duration-200 shadow-md flex items-center justify-center gap-2">
+                        <i data-lucide="credit-card" class="w-4 h-4"></i> Bayar & Simpan
+                    </button>
+                </div>
+            </section>
 
-    // Ambil semua transaksi lokal yang statusnya masih 'pending'
-    const pendingTx = await db.transactions.where('sync_status').equals('pending').toArray();
-    if (pendingTx.length === 0) {
-        updateOfflineUI();
-        return;
-    }
+        </main>
+    </div>
 
-    try {
-        // Sesuaikan payload sesuai dengan kolom tabel 'transactions' Supabase
-        const payload = pendingTx.map(tx => ({
-            id: tx.id,
-            total: tx.total,
-            bayar: tx.bayar,
-            kembali: tx.kembali,
-            metode: tx.metode,
-            items: tx.items
-        }));
+    <!-- LOGIKA JAVASCRIPT LENGKAP -->
+    <script>
+        // ==========================================
+        // 1. KONFIGURASI SUPABASE & DATABASE LOKAL
+        // ==========================================
+        const SUPABASE_URL = 'https://URL_SUPABASE_ANDA.supabase.co'; // Isikan URL Supabase Anda
+        const SUPABASE_KEY = 'ANON_KEY_SUPABASE_ANDA';               // Isikan Anon Key Supabase Anda
+        
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // Insert ke Supabase
-        const { error } = await supabaseClient.from('transactions').insert(payload);
+        // Database Lokal Dexie.js
+        const db = new Dexie("MaestroPayDB");
+        db.version(1).stores({
+            products: 'id, name, price, stock, barcode',
+            transactions: 'id, sync_status'
+        });
 
-        if (!error) {
-            // Ubah status lokal dari 'pending' menjadi 'synced'
-            const syncedIds = pendingTx.map(tx => tx.id);
-            await db.transactions.where('id').anyOf(syncedIds).modify({ sync_status: 'synced' });
+        let keranjang = [];
+
+        // ==========================================
+        // 2. AUTENTIKASI (SUPABASE AUTH)
+        // ==========================================
+        async function prosesLogin() {
+            const email = document.getElementById('login-email').value.trim();
+            const password = document.getElementById('login-password').value;
+            
+            if (!email || !password) return alert("Email dan Password wajib diisi!");
+
+            const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+
+            if (error) {
+                alert("Login Gagal: " + error.message);
+            } else {
+                tampilkanAplikasi(data.user.email);
+            }
         }
-    } catch (err) {
-        console.error("Gagal sinkronisasi transaksi ke server:", err);
-    }
-    
-    updateOfflineUI();
-}
 
-// ==========================================
-// 5. EVENT LISTENERS & STATUS KONEKSI
-// ==========================================
-
-async function updateOfflineUI() {
-    const indicator = document.getElementById('offline-indicator');
-    if (!indicator) return;
-
-    const pendingCount = await db.transactions.where('sync_status').equals('pending').count();
-    const countSpan = document.getElementById('pending-count');
-    if (countSpan) countSpan.innerText = pendingCount;
-    
-    if (!navigator.onLine || pendingCount > 0) {
-        indicator.style.display = 'block';
-        if (navigator.onLine) {
-            indicator.className = "bg-yellow-500 text-white text-center p-1 text-sm font-bold z-50 fixed top-0 w-full shadow";
-            indicator.innerHTML = `⚠️ Menyinkronkan ${pendingCount} transaksi tertunda ke server...`;
-        } else {
-            indicator.className = "bg-red-500 text-white text-center p-1 text-sm font-bold z-50 fixed top-0 w-full shadow";
-            indicator.innerHTML = `🔴 Mode Offline - Transaksi Tertunda: ${pendingCount}`;
+        async function prosesLogout() {
+            await supabaseClient.auth.signOut();
+            window.location.reload();
         }
-    } else {
-        indicator.style.display = 'none';
-    }
-}
 
-// Deteksi otomatis status koneksi internet dan inisialisasi aplikasi
-window.addEventListener('load', cekSesiAktif);
-window.addEventListener('online', () => {
-    updateOfflineUI();
-    triggerBackgroundSync();
-});
-window.addEventListener('offline', updateOfflineUI);
+        async function cekSesiAktif() {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (session) {
+                tampilkanAplikasi(session.user.email);
+            } else {
+                document.getElementById('login-container').style.display = 'flex';
+                document.getElementById('app-container').style.display = 'none';
+            }
+            updateOfflineUI();
+        }
+
+        function tampilkanAplikasi(email) {
+            document.getElementById('login-container').style.display = 'none';
+            document.getElementById('app-container').style.display = 'flex';
+            
+            const emailLabel = document.getElementById('user-email-display');
+            if (emailLabel) emailLabel.innerText = email;
+            
+            syncProductsToLocal();
+            lucide.createIcons();
+        }
+
+        // ==========================================
+        // 3. KELOLA PRODUK & KERANJANG
+        // ==========================================
+        async function syncProductsToLocal() {
+            if (!navigator.onLine) {
+                const localProducts = await db.products.toArray();
+                renderProduk(localProducts);
+                return;
+            }
+            
+            const { data, error } = await supabaseClient.from('products').select('*');
+            if (error) {
+                console.error("Error fetching products:", error);
+                return;
+            }
+            
+            await db.products.clear();
+            if (data.length > 0) await db.products.bulkAdd(data);
+            renderProduk(data);
+        }
+
+        function renderProduk(products) {
+            const container = document.getElementById('daftar-produk');
+            container.innerHTML = '';
+            
+            if (!products || products.length === 0) {
+                container.innerHTML = '<p class="col-span-full text-center text-gray-400 text-xs py-8">Belum ada produk. Tambahkan di database Supabase.</p>';
+                return;
+            }
+
+            products.forEach(p => {
+                container.innerHTML += `
+                    <div onclick="tambahKeKeranjang(${p.id}, '${p.name}', ${p.price})" class="bg-gray-50 hover:bg-blue-50 border border-gray-100 hover:border-blue-200 p-3 rounded-xl cursor-pointer transition flex flex-col justify-between h-24">
+                        <span class="font-bold text-gray-800 text-xs line-clamp-2">${p.name}</span>
+                        <div class="flex justify-between items-end">
+                            <span class="text-[10px] text-gray-400">Stok: ${p.stock || 0}</span>
+                            <span class="font-bold text-blue-600 text-xs">Rp ${(p.price || 0).toLocaleString('id-ID')}</span>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function tambahKeKeranjang(id, name, price) {
+            const itemExist = keranjang.find(item => item.id === id);
+            if (itemExist) {
+                itemExist.qty += 1;
+            } else {
+                keranjang.push({ id, name, price, qty: 1 });
+            }
+            renderKeranjang();
+        }
+
+        function renderKeranjang() {
+            const container = document.getElementById('cart-items');
+            const totalEl = document.getElementById('cart-total');
+            container.innerHTML = '';
+            
+            let total = 0;
+            if (keranjang.length === 0) {
+                container.innerHTML = '<p class="text-center text-gray-400 text-xs py-4">Keranjang kosong</p>';
+            } else {
+                keranjang.forEach(item => {
+                    const subtotal = item.price * item.qty;
+                    total += subtotal;
+                    container.innerHTML += `
+                        <div class="flex justify-between items-center text-xs">
+                            <div>
+                                <p class="font-semibold text-gray-800">${item.name}</p>
+                                <p class="text-gray-400">${item.qty} x Rp ${item.price.toLocaleString('id-ID')}</p>
+                            </div>
+                            <span class="font-bold text-gray-700">Rp ${subtotal.toLocaleString('id-ID')}</span>
+                        </div>
+                    `;
+                });
+            }
+            totalEl.innerText = 'Rp ' + total.toLocaleString('id-ID');
+        }
+
+        // ==========================================
+        // 4. TRANSAKSI (OFFLINE-FIRST)
+        // ==========================================
+        async function prosesCheckout() {
+            if (keranjang.length === 0) return alert("Keranjang masih kosong!");
+
+            const total = keranjang.reduce((sum, item) => sum + (item.price * item.qty), 0);
+            const txData = {
+                id: Date.now(),
+                total: total,
+                bayar: total,
+                kembali: 0,
+                metode: 'Tunai',
+                items: keranjang,
+                sync_status: 'pending'
+            };
+
+            await db.transactions.put(txData);
+            alert("Transaksi berhasil!");
+            
+            keranjang = [];
+            renderKeranjang();
+            triggerBackgroundSync();
+        }
+
+        async function triggerBackgroundSync() {
+            if (!navigator.onLine) {
+                updateOfflineUI();
+                return;
+            }
+
+            const pendingTx = await db.transactions.where('sync_status').equals('pending').toArray();
+            if (pendingTx.length === 0) {
+                updateOfflineUI();
+                return;
+            }
+
+            try {
+                const payload = pendingTx.map(tx => ({
+                    id: tx.id,
+                    total: tx.total,
+                    bayar: tx.bayar,
+                    kembali: tx.kembali,
+                    metode: tx.metode,
+                    items: tx.items
+                }));
+
+                const { error } = await supabaseClient.from('transactions').insert(payload);
+
+                if (!error) {
+                    const syncedIds = pendingTx.map(tx => tx.id);
+                    await db.transactions.where('id').anyOf(syncedIds).modify({ sync_status: 'synced' });
+                }
+            } catch (err) {
+                console.error("Gagal sinkronisasi:", err);
+            }
+            
+            updateOfflineUI();
+        }
+
+        // ==========================================
+        // 5. STATUS KONEKSI INTERNET
+        // ==========================================
+        async function updateOfflineUI() {
+            const indicator = document.getElementById('offline-indicator');
+            if (!indicator) return;
+
+            const pendingCount = await db.transactions.where('sync_status').equals('pending').count();
+            const countSpan = document.getElementById('pending-count');
+            if (countSpan) countSpan.innerText = pendingCount;
+            
+            if (!navigator.onLine || pendingCount > 0) {
+                indicator.style.display = 'block';
+                if (navigator.onLine) {
+                    indicator.className = "bg-yellow-500 text-white text-center p-1.5 text-xs font-bold z-50 fixed top-0 w-full shadow-md";
+                    indicator.innerHTML = `⚠️ Menyinkronkan ${pendingCount} transaksi...`;
+                } else {
+                    indicator.className = "bg-red-500 text-white text-center p-1.5 text-xs font-bold z-50 fixed top-0 w-full shadow-md";
+                    indicator.innerHTML = `🔴 Mode Offline - Transaksi Tertunda: ${pendingCount}`;
+                }
+            } else {
+                indicator.style.display = 'none';
+            }
+        }
+
+        window.addEventListener('load', () => {
+            cekSesiAktif();
+            lucide.createIcons();
+        });
+        window.addEventListener('online', () => {
+            updateOfflineUI();
+            triggerBackgroundSync();
+        });
+        window.addEventListener('offline', updateOfflineUI);
+    </script>
+</body>
+</html>
