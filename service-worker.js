@@ -4,7 +4,7 @@
 // jadi kasir tetap bisa jualan walau internet mati, lalu sinkron lagi
 // begitu online.
 
-const CACHE_NAME = 'maestro-pay-shell-v6';
+const CACHE_NAME = 'maestro-pay-shell-v7';
 
 // File dari domain sendiri
 const SHELL_FILES = [
